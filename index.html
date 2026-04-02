@@ -57,15 +57,17 @@
     </div>
     
     <script>
-        const GIST_RAW_URL = 'https://gist.githubusercontent.com/gusfing/ad437d0ac4f6ea8aa953c6cbdf1c66a7/raw/a6244df4de89e5fde4ee12f1cedee86ed21d4dfc/queue.json';
+        const GIST_API = 'https://api.github.com/gists/ad437d0ac4f6ea8aa953c6cbdf1c66a7';
         
         async function loadQueue() {
             try {
-                const res = await fetch(GIST_RAW_URL + '?t=' + Date.now());
+                const res = await fetch(GIST_API);
                 const data = await res.json();
-                renderQueue(data);
+                const queue = JSON.parse(data.files['queue.json'].content);
+                renderQueue(queue);
             } catch (e) {
                 document.getElementById('queue-list').innerHTML = '<div class="empty">Error loading queue</div>';
+                console.error(e);
             }
         }
         
