@@ -24,14 +24,17 @@
         .platform-section.active { display: block; }
         .composer { background: #1a1a1a; border: 1px solid #333; border-radius: 12px; padding: 24px; margin-bottom: 24px; }
         .composer h2 { margin-bottom: 16px; font-size: 1.1rem; }
-        
-        /* Account Selector */
         .account-selector { margin-bottom: 16px; }
         .account-selector label { display: block; font-size: 0.875rem; color: #888; margin-bottom: 8px; }
         .account-chips { display: flex; gap: 8px; flex-wrap: wrap; }
         .account-chip { padding: 8px 16px; background: #252525; border: 1px solid #333; border-radius: 20px; cursor: pointer; font-size: 0.875rem; transition: all 0.2s; }
         .account-chip:hover { background: #333; }
         .account-chip.selected { background: #667eea; border-color: #667eea; }
+        
+        .schedule-row { display: flex; gap: 16px; margin-bottom: 16px; align-items: center; flex-wrap: wrap; }
+        .schedule-row label { font-size: 0.875rem; color: #888; }
+        .schedule-row input[type="datetime-local"] { background: #252525; border: 1px solid #333; border-radius: 6px; padding: 8px 12px; color: #fff; }
+        .schedule-row input[type="datetime-local"]::-webkit-calendar-picker-indicator { filter: invert(1); }
         
         .textarea-wrap { position: relative; margin-bottom: 16px; }
         textarea { width: 100%; min-height: 120px; background: #252525; border: 1px solid #333; border-radius: 8px; padding: 16px; color: #fff; font-size: 1rem; resize: vertical; font-family: inherit; }
@@ -45,19 +48,31 @@
         .preview-item { position: relative; width: 100px; height: 100px; border-radius: 8px; overflow: hidden; }
         .preview-item img { width: 100%; height: 100%; object-fit: cover; }
         .preview-item .remove { position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; background: rgba(0,0,0,0.7); border: none; border-radius: 50%; color: #fff; cursor: pointer; font-size: 12px; }
-        .post-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 8px; color: #fff; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+        
+        .btn-row { display: flex; gap: 12px; }
+        .post-btn { flex: 1; padding: 14px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 8px; color: #fff; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s; }
         .post-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4); }
+        .schedule-btn { flex: 1; padding: 14px; background: #333; border: none; border-radius: 8px; color: #fff; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+        .schedule-btn:hover { background: #444; }
+        
         .queue-section { background: #1a1a1a; border: 1px solid #333; border-radius: 12px; padding: 24px; }
-        .queue-section h2 { margin-bottom: 16px; font-size: 1.1rem; }
+        .queue-section h2 { margin-bottom: 16px; font-size: 1.1rem; display: flex; justify-content: space-between; align-items: center; }
         .queue-item { background: #252525; border: 1px solid #333; border-radius: 8px; padding: 16px; margin-bottom: 12px; }
         .queue-item .qi-header { display: flex; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 8px; }
         .queue-item .qi-platform { font-size: 0.75rem; padding: 4px 8px; background: #333; border-radius: 4px; }
         .queue-item .qi-account { font-size: 0.75rem; padding: 4px 8px; background: #444; border-radius: 4px; color: #aaa; }
+        .queue-item .qi-time { font-size: 0.75rem; color: #888; }
+        .queue-item .qi-scheduled { font-size: 0.75rem; color: #fbbf24; }
         .queue-item .qi-status { font-size: 0.75rem; padding: 4px 8px; border-radius: 4px; }
         .queue-item .qi-status.pending { background: #fbbf24; color: #000; }
+        .queue-item .qi-status.scheduled { background: #3b82f6; color: #fff; }
         .queue-item .qi-status.posted { background: #4ade80; color: #000; }
         .queue-item .qi-status.failed { background: #f87171; color: #fff; }
         .queue-item .qi-content { font-size: 0.9rem; color: #ccc; margin: 8px 0; }
+        .queue-item .qi-actions { display: flex; gap: 8px; margin-top: 12px; }
+        .queue-item .qi-actions button { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.75rem; }
+        .queue-item .qi-actions .post-now { background: #4ade80; color: #000; }
+        .queue-item .qi-actions .delete { background: #f87171; color: #fff; }
         .empty-queue { text-align: center; padding: 40px; color: #666; }
         .notification { position: fixed; bottom: 20px; right: 20px; padding: 16px 24px; background: #1a1a1a; border: 1px solid #667eea; border-radius: 8px; transform: translateY(100px); opacity: 0; transition: all 0.3s; z-index: 1000; }
         .notification.show { transform: translateY(0); opacity: 1; }
@@ -69,13 +84,17 @@
     <div class="container">
         <header>
             <h1>Kunal's Social Dashboard</h1>
-            <p>Select account → Compose → Add to Queue</p>
+            <p>Select Account → Compose → Schedule or Post Now</p>
         </header>
         
         <div class="status-bar">
             <div class="status-card">
                 <h3>Queue</h3>
                 <div class="value ready" id="queue-count">0 posts</div>
+            </div>
+            <div class="status-card">
+                <h3>Next Scheduled</h3>
+                <div class="value" id="next-scheduled">-</div>
             </div>
         </div>
         
@@ -90,15 +109,17 @@
         <div class="platform-section active" id="x-section">
             <div class="composer">
                 <h2>Post to X.com</h2>
-                
                 <div class="account-selector">
-                    <label>Select Account:</label>
+                    <label>Account:</label>
                     <div class="account-chips">
                         <div class="account-chip selected" data-account="acct1" data-platform="x">@Kunalsharmadec6</div>
                         <div class="account-chip" data-account="acct2" data-platform="x">@richbutruined</div>
                     </div>
                 </div>
-                
+                <div class="schedule-row">
+                    <label>Schedule (optional):</label>
+                    <input type="datetime-local" id="x-schedule">
+                </div>
                 <div class="textarea-wrap">
                     <textarea id="x-text" placeholder="What's happening?" maxlength="280"></textarea>
                     <div class="char-count"><span id="x-char-count">0</span>/280</div>
@@ -107,7 +128,10 @@
                     <label><span>📷 Add Images (up to 4)</span><input type="file" id="x-images" accept="image/*" multiple></label>
                     <div class="image-preview" id="x-preview"></div>
                 </div>
-                <button class="post-btn" onclick="postNow('x')">Add to Queue</button>
+                <div class="btn-row">
+                    <button class="post-btn" onclick="postNow('x')">Post Now</button>
+                    <button class="schedule-btn" onclick="schedulePost('x')">Schedule</button>
+                </div>
             </div>
         </div>
         
@@ -115,23 +139,28 @@
         <div class="platform-section" id="instagram-section">
             <div class="composer">
                 <h2>Post to Instagram</h2>
-                
                 <div class="account-selector">
-                    <label>Select Account:</label>
+                    <label>Account:</label>
                     <div class="account-chips">
                         <div class="account-chip selected" data-account="acct1" data-platform="instagram">@paper_draft_animation</div>
                         <div class="account-chip" data-account="acct2" data-platform="instagram">Account 2</div>
                     </div>
                 </div>
-                
+                <div class="schedule-row">
+                    <label>Schedule (optional):</label>
+                    <input type="datetime-local" id="instagram-schedule">
+                </div>
                 <div class="textarea-wrap">
-                    <textarea id="ig-text" placeholder="Write a caption..."></textarea>
+                    <textarea id="instagram-text" placeholder="Write a caption..."></textarea>
                 </div>
                 <div class="image-upload">
-                    <label><span>📷 Add Image</span><input type="file" id="ig-images" accept="image/*"></label>
-                    <div class="image-preview" id="ig-preview"></div>
+                    <label><span>📷 Add Image</span><input type="file" id="instagram-images" accept="image/*"></label>
+                    <div class="image-preview" id="instagram-preview"></div>
                 </div>
-                <button class="post-btn" onclick="postNow('instagram')">Add to Queue</button>
+                <div class="btn-row">
+                    <button class="post-btn" onclick="postNow('instagram')">Post Now</button>
+                    <button class="schedule-btn" onclick="schedulePost('instagram')">Schedule</button>
+                </div>
             </div>
         </div>
         
@@ -139,15 +168,17 @@
         <div class="platform-section" id="reddit-section">
             <div class="composer">
                 <h2>Post to Reddit</h2>
-                
                 <div class="account-selector">
-                    <label>Select Account:</label>
+                    <label>Account:</label>
                     <div class="account-chips">
                         <div class="account-chip selected" data-account="acct1" data-platform="reddit">u/kfparadox</div>
                         <div class="account-chip" data-account="acct2" data-platform="reddit">u/richbutruined</div>
                     </div>
                 </div>
-                
+                <div class="schedule-row">
+                    <label>Schedule (optional):</label>
+                    <input type="datetime-local" id="reddit-schedule">
+                </div>
                 <div class="textarea-wrap">
                     <textarea id="reddit-text" placeholder="Post title..."></textarea>
                 </div>
@@ -155,7 +186,10 @@
                     <label><span>📷 Add Image</span><input type="file" id="reddit-images" accept="image/*"></label>
                     <div class="image-preview" id="reddit-preview"></div>
                 </div>
-                <button class="post-btn" onclick="postNow('reddit')">Add to Queue</button>
+                <div class="btn-row">
+                    <button class="post-btn" onclick="postNow('reddit')">Post Now</button>
+                    <button class="schedule-btn" onclick="schedulePost('reddit')">Schedule</button>
+                </div>
             </div>
         </div>
         
@@ -163,15 +197,17 @@
         <div class="platform-section" id="linkedin-section">
             <div class="composer">
                 <h2>Post to LinkedIn</h2>
-                
                 <div class="account-selector">
-                    <label>Select Account:</label>
+                    <label>Account:</label>
                     <div class="account-chips">
                         <div class="account-chip selected" data-account="linkedin1" data-platform="linkedin">fatmahifza1</div>
                         <div class="account-chip" data-account="linkedin2" data-platform="linkedin">thepixzastudio</div>
                     </div>
                 </div>
-                
+                <div class="schedule-row">
+                    <label>Schedule (optional):</label>
+                    <input type="datetime-local" id="linkedin-schedule">
+                </div>
                 <div class="textarea-wrap">
                     <textarea id="linkedin-text" placeholder="Write a post..."></textarea>
                 </div>
@@ -179,7 +215,10 @@
                     <label><span>📷 Add Image</span><input type="file" id="linkedin-images" accept="image/*"></label>
                     <div class="image-preview" id="linkedin-preview"></div>
                 </div>
-                <button class="post-btn" onclick="postNow('linkedin')">Add to Queue</button>
+                <div class="btn-row">
+                    <button class="post-btn" onclick="postNow('linkedin')">Post Now</button>
+                    <button class="schedule-btn" onclick="schedulePost('linkedin')">Schedule</button>
+                </div>
             </div>
         </div>
         
@@ -197,23 +236,17 @@
     <script>
         const API = '/api/post';
         let currentPlatform = 'x';
-        let selectedAccount = 'acct1';
-        let currentAccounts = {};
+        let currentAccounts = { x: 'acct1', instagram: 'acct1', reddit: 'acct1', linkedin: 'linkedin1' };
         
         // Account chip selection
         document.querySelectorAll('.account-chip').forEach(chip => {
             chip.addEventListener('click', () => {
                 const platform = chip.dataset.platform;
-                // Deselect all chips for this platform
                 document.querySelectorAll(`.account-chip[data-platform="${platform}"]`).forEach(c => c.classList.remove('selected'));
-                // Select this one
                 chip.classList.add('selected');
                 currentAccounts[platform] = chip.dataset.account;
             });
         });
-        
-        // Initialize accounts
-        currentAccounts = { x: 'acct1', instagram: 'acct1', reddit: 'acct1', linkedin: 'linkedin1' };
         
         // Tab switching
         document.querySelectorAll('.tab').forEach(tab => {
@@ -224,7 +257,6 @@
                 const platform = tab.dataset.platform;
                 document.getElementById(`${platform}-section`).classList.add('active');
                 currentPlatform = platform;
-                selectedAccount = currentAccounts[platform] || 'acct1';
             });
         });
         
@@ -238,7 +270,7 @@
         });
         
         // Image preview
-        ['x-images', 'ig-images', 'reddit-images', 'linkedin-images'].forEach(inputId => {
+        ['x-images', 'instagram-images', 'reddit-images', 'linkedin-images'].forEach(inputId => {
             document.getElementById(inputId).addEventListener('change', (e) => {
                 const platform = inputId.split('-')[0];
                 const preview = document.getElementById(`${platform}-preview`);
@@ -259,8 +291,7 @@
         
         // Post now
         async function postNow(platform) {
-            const textEl = document.getElementById(`${platform}-text`);
-            const text = textEl?.value.trim() || '';
+            const text = document.getElementById(`${platform}-text`)?.value.trim() || '';
             const preview = document.getElementById(`${platform}-preview`);
             const images = [];
             preview.querySelectorAll('img').forEach(img => images.push(img.src));
@@ -271,7 +302,6 @@
             }
             
             const account = currentAccounts[platform] || 'acct1';
-            
             const post = {
                 id: Date.now().toString(),
                 platform,
@@ -282,9 +312,47 @@
                 createdAt: new Date().toISOString()
             };
             
-            const btn = document.querySelector(`#${platform}-section .post-btn`);
+            await sendPost(post);
+        }
+        
+        // Schedule post
+        async function schedulePost(platform) {
+            const text = document.getElementById(`${platform}-text`)?.value.trim() || '';
+            const scheduleTime = document.getElementById(`${platform}-schedule`).value;
+            const preview = document.getElementById(`${platform}-preview`);
+            const images = [];
+            preview.querySelectorAll('img').forEach(img => images.push(img.src));
+            
+            if (!text && images.length === 0) {
+                showNotification('Please add text or images', 'error');
+                return;
+            }
+            
+            if (!scheduleTime) {
+                showNotification('Please select a date and time', 'error');
+                return;
+            }
+            
+            const account = currentAccounts[platform] || 'acct1';
+            const post = {
+                id: Date.now().toString(),
+                platform,
+                account,
+                text,
+                images,
+                status: 'scheduled',
+                scheduledAt: new Date(scheduleTime).toISOString(),
+                createdAt: new Date().toISOString()
+            };
+            
+            await sendPost(post);
+        }
+        
+        async function sendPost(post) {
+            const btn = document.querySelector(`#${post.platform}-section .post-btn`);
+            const schedBtn = document.querySelector(`#${post.platform}-section .schedule-btn`);
             btn.disabled = true;
-            btn.textContent = 'Adding...';
+            schedBtn.disabled = true;
             
             try {
                 const res = await fetch(API, {
@@ -296,19 +364,22 @@
                 const data = await res.json();
                 
                 if (data.success) {
-                    showNotification('Post added to queue!', 'success');
+                    showNotification(post.status === 'scheduled' ? 'Post scheduled!' : 'Post added to queue!', 'success');
+                    // Clear form
+                    const textEl = document.getElementById(`${post.platform}-text`);
                     if (textEl) textEl.value = '';
-                    preview.innerHTML = '';
+                    document.getElementById(`${post.platform}-preview`).innerHTML = '';
+                    document.getElementById(`${post.platform}-schedule`).value = '';
                     loadQueue();
                 } else {
-                    showNotification(data.error || 'Failed to add post', 'error');
+                    showNotification(data.error || 'Failed', 'error');
                 }
             } catch (e) {
                 showNotification('Error: ' + e.message, 'error');
             }
             
             btn.disabled = false;
-            btn.textContent = 'Add to Queue';
+            schedBtn.disabled = false;
         }
         
         // Load queue
@@ -317,7 +388,17 @@
                 const res = await fetch(API);
                 const data = await res.json();
                 const posts = data.posts || [];
-                document.getElementById('queue-count').textContent = `${posts.length} posts`;
+                const pending = posts.filter(p => p.status === 'pending' || p.status === 'scheduled').length;
+                document.getElementById('queue-count').textContent = `${pending} posts`;
+                
+                // Find next scheduled
+                const scheduled = posts.filter(p => p.status === 'scheduled').sort((a,b) => new Date(a.scheduledAt) - new Date(b.scheduledAt));
+                if (scheduled.length > 0) {
+                    const next = new Date(scheduled[0].scheduledAt);
+                    document.getElementById('next-scheduled').textContent = next.toLocaleString();
+                } else {
+                    document.getElementById('next-scheduled').textContent = '-';
+                }
                 
                 const list = document.getElementById('queue-list');
                 if (posts.length === 0) {
@@ -333,18 +414,44 @@
                     linkedin2: 'thepixzastudio'
                 };
                 
-                list.innerHTML = posts.map(post => `
-                    <div class="queue-item">
-                        <div class="qi-header">
-                            <span class="qi-platform">${platformIcons[post.platform]} ${post.platform}</span>
-                            <span class="qi-account">${accountNames[post.account] || post.account}</span>
-                            <span class="qi-status ${post.status}">${post.status}</span>
+                // Filter to show pending and scheduled only
+                const activePosts = posts.filter(p => p.status === 'pending' || p.status === 'scheduled' || p.status === 'posting');
+                
+                if (activePosts.length === 0) {
+                    list.innerHTML = '<div class="empty-queue">No posts in queue</div>';
+                    return;
+                }
+                
+                list.innerHTML = activePosts.map(post => {
+                    const scheduledText = post.scheduledAt ? new Date(post.scheduledAt).toLocaleString() : '';
+                    return `
+                        <div class="queue-item">
+                            <div class="qi-header">
+                                <span class="qi-platform">${platformIcons[post.platform]} ${post.platform}</span>
+                                <span class="qi-account">${accountNames[post.account] || post.account}</span>
+                                <span class="qi-status ${post.status}">${post.status}</span>
+                            </div>
+                            ${post.scheduledAt ? `<div class="qi-scheduled">📅 Scheduled: ${scheduledText}</div>` : ''}
+                            <div class="qi-content">${post.text || '[Image only]'}</div>
+                            <div class="qi-actions">
+                                ${post.status === 'scheduled' ? `<button class="post-now" onclick="postNow('${post.platform}')">Post Now</button>` : ''}
+                                <button class="delete" onclick="deletePost('${post.id}')">Delete</button>
+                            </div>
                         </div>
-                        <div class="qi-content">${post.text || '[Image only]'}</div>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
             } catch (e) {
                 console.error('Failed to load queue:', e);
+            }
+        }
+        
+        async function deletePost(id) {
+            try {
+                const res = await fetch(`${API}?id=${id}`, { method: 'DELETE' });
+                loadQueue();
+                showNotification('Post deleted', 'success');
+            } catch (e) {
+                showNotification('Error deleting post', 'error');
             }
         }
         

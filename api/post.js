@@ -2,7 +2,7 @@
 // Uses GitHub Gist as a queue
 
 const GIST_ID = process.env.GIST_ID || 'ad437d0ac4f6ea8aa953c6cbdf1c66a7';
-const GIST_URL = `https://api.github.com/gists/${GIST_ID}`;
+const GIST_URL = `https://api.github.com/gists/${GIST_ID`;
 
 async function getGist() {
   const res = await fetch(GIST_URL, {
@@ -47,17 +47,42 @@ export default async function handler(req, res) {
     return;
   }
 
+  // DELETE - remove post from queue
+  if (req.method === 'DELETE') {
+    const { searchParams } = new URL(req.url);
+    const postId = searchParams.get('id');
+    
+    if (!postId) {
+      res.status(400).json({ error: 'Post ID required' });
+      return;
+    }
+    
+    try {
+      const gist = await getGist();
+      const queue = JSON.parse(gist.files['queue.json'].content);
+      queue.posts = queue.posts.filter(p => p.id !== postId);
+      queue.lastUpdate = new Date().toISOString();
+      await updateGist(queue);
+      res.status(200).json({ success: true });
+    } catch (error) {
+      console.error('DELETE Error:', error);
+      res.status(500).json({ error: error.message });
+    }
+    return;
+  }
+
   // POST - add post to queue
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const { platform, text, images } = req.body;
+    const { platform, account, text, images, status, scheduledAt } = req.body;
 
-    console.log(`\n📤 New post: ${platform}`);
+    console.log(`\n📤 New post: ${platform} (${account})`);
     console.log(`   Text: ${text?.substring(0, 50)}...`);
-    console.log(`   Images: ${images?.length || 0}`);
+    console.log(`   Status: ${status}`);
+    if (scheduledAt) console.log(`   Scheduled: ${scheduledAt}`);
 
     // Get current queue
     const gist = await getGist();
@@ -67,11 +92,16 @@ export default async function handler(req, res) {
     const post = {
       id: Date.now().toString(),
       platform,
+      account,
       text: text || '',
       images: images || [],
-      status: 'pending',
+      status: status || 'pending',
       createdAt: new Date().toISOString()
     };
+    
+    if (scheduledAt) {
+      post.scheduledAt = scheduledAt;
+    }
 
     if (!queue.posts) queue.posts = [];
     queue.posts.unshift(post);
@@ -79,11 +109,11 @@ export default async function handler(req, res) {
 
     await updateGist(queue);
 
-    console.log(`✅ Post added: ${post.id}`);
+    console.log(`✅ Post added: ${post.id} (${post.status})`);
 
     res.status(200).json({ 
       success: true, 
-      message: 'Post added to queue!',
+      message: status === 'scheduled' ? 'Post scheduled!' : 'Post added to queue!',
       postId: post.id
     });
 
