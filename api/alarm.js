@@ -1,5 +1,4 @@
-// API route for alarm
-
+// API route for alarm - CommonJS format
 const GIST_ID = process.env.GIST_ID || 'ad437d0ac4f6ea8aa953c6cbdf1c66a7';
 const GIST_URL = `https://api.github.com/gists/${GIST_ID}`;
 
@@ -32,7 +31,7 @@ async function updateGist(content) {
   if (!res.ok) throw new Error('Failed to update Gist');
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // GET - return alarm
   if (req.method === 'GET') {
     try {
@@ -78,4 +77,4 @@ export default async function handler(req, res) {
   }
 
   res.status(405).json({ error: 'Method not allowed' });
-}
+};
