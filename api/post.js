@@ -2,7 +2,7 @@
 // Uses GitHub Gist as a queue
 
 const GIST_ID = process.env.GIST_ID || 'ad437d0ac4f6ea8aa953c6cbdf1c66a7';
-const GIST_URL = `https://api.github.com/gists/${GIST_ID`;
+const GIST_URL = `https://api.github.com/gists/${GIST_ID}`;
 
 async function getGist() {
   const res = await fetch(GIST_URL, {
