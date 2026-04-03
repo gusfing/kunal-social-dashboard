@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Virtual Office</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { overflow: hidden; font-family: 'Segoe UI', sans-serif; background: #0a0a1a; }
+        #canvas { display: block; }
+        .hud { position: fixed; top: 20px; left: 20px; color: #fff; z-index: 100; }
+        .room-name { background: rgba(0,0,0,0.7); padding: 10px 20px; border-radius: 8px; font-size: 1.2rem; }
+        .controls { position: fixed; bottom: 20px; left: 20px; background: rgba(0,0,0,0.8); color: #fff; padding: 15px; border-radius: 8px; z-index: 100; }
+        .controls h3 { color: #4ade80; margin-bottom: 10px; }
+        .controls kbd { background: #333; padding: 2px 8px; border-radius: 4px; margin: 0 3px; }
+        .rooms { position: fixed; top: 80px; left: 20px; z-index: 100; }
+        .room-btn { display: block; width: 150px; padding: 10px; margin: 5px 0; background: rgba(0,0,0,0.7); border: 1px solid #333; color: #fff; border-radius: 6px; cursor: pointer; }
+        .room-btn:hover, .room-btn.active { background: #4ade80; color: #000; }
+        .minimap { position: fixed; top: 20px; right: 20px; width: 150px; height: 100px; background: rgba(0,0,0,0.8); border: 2px solid #4ade80; border-radius: 8px; z-index: 100; }
+        .chat { position: fixed; bottom: 20px; right: 20px; width: 280px; background: rgba(0,0,0,0.9); border-radius: 12px; z-index: 100; }
+        .chat-header { padding: 12px; background: #1a1a2e; border-radius: 12px 12px 0 0; color: #fff; font-weight: bold; }
+        .chat-messages { padding: 12px; max-height: 200px; overflow-y: auto; }
+        .chat-message { padding: 8px 12px; border-radius: 8px; margin-bottom: 8px; font-size: 0.85rem; }
+        .chat-message.self { background: #4ade80; color: #000; margin-left: 20px; }
+        .chat-message.other { background: #333; color: #fff; margin-right: 20px; }
+        .chat-message.system { background: #fbbf24; color: #000; text-align: center; font-size: 0.75rem; }
+        .chat-input { padding: 12px; border-top: 1px solid #333; display: flex; gap: 8px; }
+        .chat-input input { flex: 1; padding: 8px; border: none; border-radius: 6px; background: #333; color: #fff; }
+        .chat-input button { padding: 8px 16px; background: #4ade80; border: none; border-radius: 6px; color: #000; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    
+    <div class="hud">
+        <div class="room-name" id="room-name">🏢 Main Hall</div>
+    </div>
+    
+    <div class="rooms">
+        <button class="room-btn active" data-room="main">🏢 Main Hall</button>
+        <button class="room-btn" data-room="meeting">📋 Meeting Room</button>
+        <button class="room-btn" data-room="lounge">🛋️ Lounge</button>
+        <button class="room-btn" data-room="server">🖥️ Server Room</button>
+    </div>
+    
+    <div class="controls">
+        <h3>🎮 Controls</h3>
+        <p><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move</p>
+        <p><kbd>Mouse</kbd> Look</p>
+        <p><kbd>Space</kbd> Jump</p>
+        <p><kbd>Enter</kbd> Chat</p>
+    </div>
+    
+    <div class="minimap"><canvas id="minimap"></canvas></div>
+    
+    <div class="chat">
+        <div class="chat-header">💬 Team Chat</div>
+        <div class="chat-messages" id="chat-messages">
+            <div class="chat-message system">Welcome to 3D Office!</div>
+        </div>
+        <div class="chat-input">
+            <input type="text" id="chat-input" placeholder="Type...">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87CEEB);
+        scene.fog = new THREE.Fog(0x87CEEB, 50, 150);
+        
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+        
+        // Lights
+        scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+        const sun = new THREE.DirectionalLight(0xffffff, 0.8);
+        sun.position.set(50, 100, 50);
+        scene.add(sun);
+        
+        // Floor
+        const floor = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshLambertMaterial({ color: 0x808080 }));
+        floor.rotation.x = -Math.PI / 2;
+        scene.add(floor);
+        
+        // Player
+        const player = { x: 0, y: 1.7, z: 0, vy: 0, speed: 0.2, canJump: true };
+        const keys = {};
+        let locked = false;
+        
+        document.addEventListener('keydown', e => { keys[e.code] = true; if(e.code==='Enter') document.getElementById('chat-input').focus(); });
+        document.addEventListener('keyup', e => keys[e.code] = false);
+        document.addEventListener('click', () => { if(document.activeElement.tagName !== 'INPUT') renderer.domElement.requestPointerLock(); });
+        document.addEventListener('pointerlockchange', () => locked = document.pointerLockElement === renderer.domElement);
+        document.addEventListener('mousemove', e => { if(locked) { camera.rotation.y -= e.movementX * 0.003; camera.rotation.x -= e.movementY * 0.003; } });
+        
+        // Buildings
+        function box(x, y, z, w, h, d, color) {
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshLambertMaterial({ color }));
+            mesh.position.set(x, y, z);
+            mesh.castShadow = true;
+            scene.add(mesh);
+            return mesh;
+        }
+        
+        // Main Hall
+        box(0, 2.5, -15, 30, 5, 0.3, 0x87CEEB);
+        box(-15, 2.5, 0, 0.3, 5, 30, 0x87CEEB);
+        box(15, 2.5, 0, 0.3, 5, 30, 0x87CEEB);
+        box(0, 5.15, 0, 30, 0.3, 30, 0x654321);
+        // Desk
+        box(0, 0.5, 0, 2, 0.8, 1, 0x8B4513);
+        box(0, 1, 0, 0.6, 0.4, 0.05, 0x111111);
+        // Chairs
+        [-1,0,1].forEach(i => box(i*1.5, 0.35, 3, 0.5, 0.5, 0.5, 0x333333));
+        // Plants
+        [-12,-9,-6,-3].forEach((x,i) => { box(x, 0.4, -12, 0.6, 0.5, 0.6, 0x8B4513); box(x, 1, -12, 0.8, 0.8, 0.8, 0x228B22); });
+        
+        // Meeting Room
+        box(30, 2, -25, 15, 4, 0.3, 0x87CEEB);
+        box(22.5, 2, -17.5, 0.3, 4, 15, 0x87CEEB);
+        box(37.5, 2, -17.5, 0.3, 4, 15, 0x87CEEB);
+        box(30, 4.15, -17.5, 15, 0.3, 15, 0x654321);
+        box(30, 0.5, -20, 6, 0.8, 2, 0x2F4F4F);
+        
+        // Lounge  
+        box(-30, 2, -25, 15, 4, 0.3, 0x87CEEB);
+        box(-22.5, 2, -17.5, 0.3, 4, 15, 0x87CEEB);
+        box(-37.5, 2, -17.5, 0.3, 4, 15, 0x87CEEB);
+        box(-30, 0.5, -20, 4, 0.8, 1.5, 0x4a4a4a);
+        box(-30, 2, -17, 3, 1.5, 0.1, 0x111111);
+        
+        // Server Room
+        box(0, 1.5, -40, 10, 3, 0.3, 0x87CEEB);
+        box(-5, 1.5, -34.5, 0.3, 3, 10, 0x87CEEB);
+        box(5, 1.5, -34.5, 0.3, 3, 10, 0x87CEEB);
+        box(0, 3.15, -34.5, 10, 0.3, 10, 0x654321);
+        for(let i=-2; i<=2; i++) box(i*2.5, 1.5, -40, 1, 3, 1, 0x333333);
+        
+        // NPCs
+        const npcs = [];
+        function createNPC(name, x, z, color) {
+            const g = new THREE.Group();
+            g.add(new THREE.Mesh(new THREE.BoxGeometry(0.5, 1, 0.3), new THREE.MeshLambertMaterial({ color }));
+            g.add(new THREE.Mesh(new THREE.SphereGeometry(0.25), new THREE.MeshLambertMaterial({ color: 0xffdbac }));
+            g.position.set(x, 0, z);
+            g.userData = { name, tx: x, tz: z };
+            scene.add(g);
+            npcs.push(g);
+        }
+        createNPC('Alice', 5, 5, 0x4ade80);
+        createNPC('Bob', -5, 5, 0x3b82f6);
+        createNPC('Charlie', 0, 8, 0xf87171);
+        
+        // Sky
+        const sky = new THREE.Mesh(new THREE.SphereGeometry(300, 32, 32), new THREE.MeshBasicMaterial({ color: 0x87CEEB, side: THREE.BackSide }));
+        scene.add(sky);
+        
+        // Minimap
+        const minimap = document.getElementById('minimap');
+        const mctx = minimap.getContext('2d');
+        
+        function updateMinimap() {
+            mctx.fillStyle = '#1a1a2e';
+            mctx.fillRect(0, 0, 150, 100);
+            mctx.fillStyle = '#333';
+            mctx.fillRect(60, 30, 30, 40);
+            mctx.fillStyle = '#4ade80';
+            mctx.beginPath();
+            mctx.arc(75 + player.x * 0.5, 50 + player.z * 0.5, 4, 0, Math.PI * 2);
+            mctx.fill();
+        }
+        
+        // Chat
+        function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const msg = input.value.trim();
+            if (!msg) return;
+            addChat(msg, 'self');
+            input.value = '';
+        }
+        function addChat(text, sender) {
+            const div = document.createElement('div');
+            div.className = 'chat-message ' + sender;
+            div.textContent = (sender === 'self' ? 'You: ' : '') + text;
+            document.getElementById('chat-messages').appendChild(div);
+            document.getElementById('chat-messages').scrollTop += 50;
+        }
+        document.getElementById('chat-input').addEventListener('keypress', e => { if(e.key === 'Enter') sendMessage(); });
+        
+        // Room navigation
+        const rooms = { main: { x: 0, z: 0 }, meeting: { x: 30, z: -20 }, lounge: { x: -30, z: -20 }, server: { x: 0, z: -35 } };
+        document.querySelectorAll('.room-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const r = rooms[btn.dataset.room];
+                player.x = r.x; player.z = r.z + 5;
+                document.querySelectorAll('.room-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById('room-name').textContent = btn.textContent.replace(/[^\w\s]/g, '').trim();
+                addChat('Joined ' + btn.textContent.replace(/[^\w\s]/g, '').trim(), 'system');
+            });
+        });
+        
+        // Loop
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Move
+            if (locked) {
+                const dir = new THREE.Vector3();
+                if (keys['KeyW']) dir.z -= 1;
+                if (keys['KeyS']) dir.z += 1;
+                if (keys['KeyA']) dir.x -= 1;
+                if (keys['KeyD']) dir.x += 1;
+                dir.normalize().applyAxisAngle(new THREE.Vector3(0, 1, 0), camera.rotation.y);
+                player.x += dir.x * player.speed;
+                player.z += dir.z * player.speed;
+                player.x = Math.max(-50, Math.min(50, player.x));
+                player.z = Math.max(-50, Math.min(50, player.z));
+                if (keys['Space'] && player.canJump) { player.vy = 0.3; player.canJump = false; }
+            }
+            player.vy -= 0.015;
+            player.y += player.vy;
+            if (player.y <= 1.7) { player.y = 1.7; player.vy = 0; player.canJump = true; }
+            
+            camera.position.set(player.x, player.y, player.z);
+            
+            // NPC patrol
+            npcs.forEach((n, i) => {
+                n.userData.tx += Math.sin(Date.now() * 0.002 + i) * 0.02;
+                n.userData.tz += Math.cos(Date.now() * 0.002 + i) * 0.02;
+                n.position.x += (n.userData.tx - n.position.x) * 0.02;
+                n.position.z += (n.userData.tz - n.position.z) * 0.02;
+                n.rotation.y = Math.atan2(n.userData.tx - n.position.x, n.userData.tz - n.position.z);
+            });
+            
+            updateMinimap();
+            renderer.render(scene, camera);
+        }
+        animate();
+        
+        window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
+    </script>
+</body>
+</html>

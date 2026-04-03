@@ -509,55 +509,52 @@
         let alarmTime = null;
         let alarmInterval = null;
 
-        async function loadAlarm() {
-            try {
-                const r = await fetch('/api/alarm');
-                const d = await r.json();
-                if (d.alarm) {
-                    alarmTime = new Date(d.alarm);
-                    if (alarmTime > new Date()) {
-                        startAlarmCountdown();
-                    } else {
-                        alarmTime = null;
-                        await fetch('/api/alarm', { method: 'DELETE' });
-                    }
+        function loadAlarm() {
+            const saved = localStorage.getItem('alarmTime');
+            if (saved) {
+                alarmTime = new Date(saved);
+                if (alarmTime > new Date()) {
+                    startAlarmCountdown();
+                } else {
+                    alarmTime = null;
+                    localStorage.removeItem('alarmTime');
                 }
-            } catch (e) { console.error('alarm load error', e); }
+            }
         }
 
-        async function setAlarm() {
+        function setAlarm() {
             const input = document.getElementById('alarm-input');
             if (!input.value) {
                 showNotification('Please select a time', 'error');
                 return;
             }
 
-            const newAlarm = new Date(input.value);
-            if (newAlarm <= new Date()) {
+            alarmTime = new Date(input.value);
+
+            // Set min datetime to now
+            const now = new Date();
+            now.setMinutes(now.getMinutes() + 1);
+            input.min = now.toISOString().slice(0, 16);
+
+            if (alarmTime <= new Date()) {
                 showNotification('Alarm must be in the future', 'error');
                 return;
             }
 
-            try {
-                await fetch('/api/alarm', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ alarmTime: newAlarm.toISOString() })
-                });
-                alarmTime = newAlarm;
-                startAlarmCountdown();
-                showNotification('Alarm set!', 'success');
-            } catch (e) {
-                showNotification('Failed to set alarm', 'error');
-            }
+            localStorage.setItem('alarmTime', alarmTime.toISOString());
+            startAlarmCountdown();
+            showNotification('Alarm set!', 'success');
         }
 
         function startAlarmCountdown() {
             if (alarmInterval) clearInterval(alarmInterval);
+
             updateAlarmDisplay();
+
             alarmInterval = setInterval(() => {
                 const now = new Date();
                 const diff = alarmTime - now;
+
                 if (diff <= 0) {
                     triggerAlarm();
                     clearInterval(alarmInterval);
@@ -571,21 +568,27 @@
             const display = document.getElementById('alarm-display');
             if (!alarmTime) {
                 display.innerHTML = '<span class="inactive">No alarm set</span>';
+                display.classList.remove('active');
                 return;
             }
+
             const diff = alarmTime - new Date();
             const h = Math.floor(diff / 3600000);
             const m = Math.floor((diff % 3600000) / 60000);
             const s = Math.floor((diff % 60000) / 1000);
+
             display.innerHTML = `
                 <span class="next">⏰ Next: ${alarmTime.toLocaleString()}</span>
                 <span class="countdown">${h}h ${m}m ${s}s remaining</span>
             `;
+            display.classList.add('active');
         }
 
         function triggerAlarm() {
             document.getElementById('alarm-overlay').classList.add('show');
             showNotification('⏰ ALARM!', 'success');
+
+            // Try notification API
             if (Notification.permission === 'granted') {
                 new Notification('⏰ Alarm!', { body: 'Your alarm is going off!' });
             } else if (Notification.permission !== 'denied') {
@@ -596,16 +599,16 @@
         function dismissAlarm() {
             document.getElementById('alarm-overlay').classList.remove('show');
             alarmTime = null;
-            fetch('/api/alarm', { method: 'DELETE' });
+            localStorage.removeItem('alarmTime');
             updateAlarmDisplay();
         }
 
-        async function clearAlarm() {
+        function clearAlarm() {
             if (alarmInterval) clearInterval(alarmInterval);
             alarmTime = null;
+            localStorage.removeItem('alarmTime');
             document.getElementById('alarm-input').value = '';
             updateAlarmDisplay();
-            try { await fetch('/api/alarm', { method: 'DELETE' }); } catch (e) {}
             showNotification('Alarm cleared', 'success');
         }
     </script>
