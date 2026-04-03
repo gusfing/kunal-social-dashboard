@@ -34,11 +34,17 @@ async function updateGist(content) {
 }
 
 export default async function handler(req, res) {
-  // GET - return queue
+  // GET - return queue OR alarm
   if (req.method === 'GET') {
     try {
       const gist = await getGist();
       const queue = JSON.parse(gist.files['queue.json'].content);
+      // Return alarm if requested
+      const url = new URL(req.url, 'http://x');
+      if (url.searchParams.get('alarm') === '1') {
+        res.status(200).json({ alarm: queue.alarm || null });
+        return;
+      }
       res.status(200).json(queue);
     } catch (error) {
       console.error('GET Error:', error);
@@ -47,10 +53,27 @@ export default async function handler(req, res) {
     return;
   }
 
-  // DELETE - remove post from queue
+  // DELETE - remove post from queue OR clear alarm
   if (req.method === 'DELETE') {
     const { searchParams } = new URL(req.url);
     const postId = searchParams.get('id');
+    const clearAlarm = searchParams.get('alarm');
+    
+    // Clear alarm
+    if (clearAlarm === '1') {
+      try {
+        const gist = await getGist();
+        const queue = JSON.parse(gist.files['queue.json'].content);
+        queue.alarm = null;
+        queue.lastUpdate = new Date().toISOString();
+        await updateGist(queue);
+        res.status(200).json({ success: true, alarm: null });
+      } catch (error) {
+        console.error('DELETE Alarm Error:', error);
+        res.status(500).json({ error: error.message });
+      }
+      return;
+    }
     
     if (!postId) {
       res.status(400).json({ error: 'Post ID required' });
@@ -71,13 +94,25 @@ export default async function handler(req, res) {
     return;
   }
 
-  // POST - add post to queue
+  // POST - add post to queue OR set alarm
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const { platform, account, text, images, status, scheduledAt } = req.body;
+    const { platform, account, text, images, status, scheduledAt, alarmTime } = req.body;
+
+    // Handle alarm set/clear
+    if (alarmTime !== undefined) {
+      const gist = await getGist();
+      const queue = JSON.parse(gist.files['queue.json'].content);
+      queue.alarm = alarmTime ? new Date(alarmTime).toISOString() : null;
+      queue.lastUpdate = new Date().toISOString();
+      await updateGist(queue);
+      console.log(`⏰ Alarm set: ${queue.alarm}`);
+      res.status(200).json({ success: true, alarm: queue.alarm });
+      return;
+    }
 
     console.log(`\n📤 New post: ${platform} (${account})`);
     console.log(`   Text: ${text?.substring(0, 50)}...`);

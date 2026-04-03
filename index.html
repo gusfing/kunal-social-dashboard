@@ -511,7 +511,7 @@
 
         async function loadAlarm() {
             try {
-                const r = await fetch('/api/alarm');
+                const r = await fetch('/api/post?alarm=1');
                 const d = await r.json();
                 if (d.alarm) {
                     alarmTime = new Date(d.alarm);
@@ -519,7 +519,7 @@
                         startAlarmCountdown();
                     } else {
                         alarmTime = null;
-                        await fetch('/api/alarm', { method: 'DELETE' });
+                        await fetch('/api/post?alarm=1', { method: 'DELETE' });
                     }
                 }
             } catch (e) { console.error('alarm load error', e); }
@@ -539,7 +539,7 @@
             }
 
             try {
-                await fetch('/api/alarm', {
+                await fetch('/api/post', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ alarmTime: newAlarm.toISOString() })
@@ -605,7 +605,7 @@
             alarmTime = null;
             document.getElementById('alarm-input').value = '';
             updateAlarmDisplay();
-            try { await fetch('/api/alarm', { method: 'DELETE' }); } catch (e) {}
+            try { await fetch('/api/post?alarm=1', { method: 'DELETE' }); } catch (e) {}
             showNotification('Alarm cleared', 'success');
         }
     </script>
