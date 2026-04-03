@@ -3,120 +3,419 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kunal's Queue</title>
+    <title>🎮 Pixel Scheduler</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+        
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f0f0f; color: #fff; min-height: 100vh; padding: 20px; }
-        .container { max-width: 600px; margin: 0 auto; }
-        header { text-align: center; padding: 20px 0; border-bottom: 1px solid #333; margin-bottom: 20px; }
-        h1 { font-size: 1.5rem; color: #667eea; }
-        .refresh { background: #333; border: none; color: #fff; padding: 8px 16px; border-radius: 6px; cursor: pointer; margin-left: 10px; }
-        .refresh:hover { background: #444; }
-        .queue-item { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 16px; margin-bottom: 12px; }
-        .qi-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px; }
-        .qi-platform { font-size: 0.75rem; padding: 4px 8px; background: #667eea; border-radius: 4px; }
-        .qi-account { font-size: 0.75rem; padding: 4px 8px; background: #444; border-radius: 4px; color: #aaa; }
-        .qi-time { font-size: 0.75rem; color: #888; }
-        .qi-content { font-size: 0.9rem; color: #ccc; margin: 8px 0; line-height: 1.5; }
-        .qi-images { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
-        .qi-images img { width: 80px; height: 80px; object-fit: cover; border-radius: 4px; }
-        .qi-status { display: inline-block; font-size: 0.75rem; padding: 4px 8px; border-radius: 4px; margin-top: 8px; }
+        
+        body {
+            font-family: 'Press Start 2P', cursive;
+            background: #1a1a2e;
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+            background-image: 
+                radial-gradient(#2a2a4e 1px, transparent 1px),
+                radial-gradient(#2a2a4e 1px, transparent 1px);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            padding: 20px;
+            background: #16213e;
+            border: 4px solid #e94560;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 0 20px rgba(233, 69, 96, 0.3);
+        }
+        
+        h1 {
+            font-size: 1.2rem;
+            color: #e94560;
+            text-shadow: 2px 2px #0f0f23;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 0.5rem;
+            color: #0f3460;
+        }
+        
+        /* Pixel Character */
+        .character {
+            width: 64px;
+            height: 64px;
+            margin: 20px auto;
+            background: #e94560;
+            position: relative;
+            image-rendering: pixelated;
+            animation: bounce 0.5s infinite alternate;
+        }
+        
+        @keyframes bounce {
+            from { transform: translateY(0); }
+            to { transform: translateY(-10px); }
+        }
+        
+        /* Status Cards */
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .card {
+            background: #16213e;
+            border: 4px solid #0f3460;
+            border-radius: 4px;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .card-title {
+            font-size: 0.5rem;
+            color: #e94560;
+            margin-bottom: 10px;
+        }
+        
+        .card-value {
+            font-size: 0.7rem;
+            color: #fff;
+        }
+        
+        .card-value.ok { color: #4ade80; }
+        .card-value.error { color: #f87171; }
+        .card-value.waiting { color: #fbbf24; }
+        
+        /* Queue Section */
+        .queue-section {
+            background: #16213e;
+            border: 4px solid #4ade80;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .section-title {
+            font-size: 0.7rem;
+            color: #4ade80;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .queue-item {
+            background: #0f3460;
+            border: 2px solid #1a1a2e;
+            padding: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .qi-info {
+            flex: 1;
+        }
+        
+        .qi-platform {
+            font-size: 0.5rem;
+            color: #fbbf24;
+            background: #1a1a2e;
+            padding: 4px 8px;
+            display: inline-block;
+            margin-right: 5px;
+        }
+        
+        .qi-account {
+            font-size: 0.4rem;
+            color: #888;
+        }
+        
+        .qi-content {
+            font-size: 0.45rem;
+            color: #fff;
+            margin-top: 8px;
+            line-height: 1.6;
+        }
+        
+        .qi-time {
+            font-size: 0.4rem;
+            color: #4ade80;
+            margin-top: 5px;
+        }
+        
+        .qi-status {
+            font-size: 0.5rem;
+            padding: 5px 10px;
+            border-radius: 4px;
+        }
+        
         .qi-status.pending { background: #fbbf24; color: #000; }
         .qi-status.scheduled { background: #3b82f6; color: #fff; }
         .qi-status.posted { background: #4ade80; color: #000; }
-        .empty { text-align: center; padding: 40px; color: #666; }
-        .info { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 16px; margin-top: 20px; }
-        .info h3 { font-size: 0.9rem; color: #888; margin-bottom: 8px; }
-        .info p { font-size: 0.85rem; color: #666; line-height: 1.5; }
-        .note { font-size: 0.75rem; color: #555; margin-top: 20px; text-align: center; }
+        .qi-status.failed { background: #f87171; color: #fff; }
+        
+        /* Activity Log */
+        .log-section {
+            background: #16213e;
+            border: 4px solid #fbbf24;
+            border-radius: 4px;
+            padding: 15px;
+        }
+        
+        .log-item {
+            font-size: 0.4rem;
+            color: #fff;
+            padding: 8px;
+            border-bottom: 1px solid #0f3460;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .log-item:last-child { border-bottom: none; }
+        
+        .log-time {
+            color: #888;
+            flex-shrink: 0;
+        }
+        
+        .log-message { flex: 1; }
+        .log-message.success { color: #4ade80; }
+        .log-message.error { color: #f87171; }
+        .log-message.info { color: #fbbf24; }
+        
+        /* Empty State */
+        .empty {
+            text-align: center;
+            padding: 30px;
+            font-size: 0.5rem;
+            color: #888;
+        }
+        
+        .empty-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        /* Refresh */
+        .refresh-btn {
+            display: block;
+            margin: 20px auto;
+            padding: 15px 30px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.6rem;
+            background: #e94560;
+            color: #fff;
+            border: 4px solid #0f3460;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .refresh-btn:hover {
+            background: #0f3460;
+            border-color: #e94560;
+            transform: scale(1.05);
+        }
+        
+        /* Pixel borders */
+        .pixel-border {
+            box-shadow: 
+                inset -4px -4px 0px 0px #0f3460,
+                inset 4px 4px 0px 0px #2a2a4e;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 0.4rem;
+            color: #888;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>📋 Post Queue <button class="refresh" onclick="loadQueue()">↻</button></h1>
+            <h1>🎮 PIXEL SCHEDULER</h1>
+            <p class="subtitle">Your Social Media Command Center</p>
+            <div class="character"></div>
         </header>
         
-        <div id="queue-list">
-            <div class="empty">Loading...</div>
+        <div class="status-grid">
+            <div class="card pixel-border">
+                <div class="card-title">📬 QUEUE</div>
+                <div class="card-value" id="queue-count">Loading...</div>
+            </div>
+            <div class="card pixel-border">
+                <div class="card-title">⏰ NEXT ALARM</div>
+                <div class="card-value waiting" id="next-alarm">Loading...</div>
+            </div>
+            <div class="card pixel-border">
+                <div class="card-title">🤖 STATUS</div>
+                <div class="card-value ok" id="bot-status">ONLINE</div>
+            </div>
         </div>
         
-        <div class="info">
-            <h3>How to add posts:</h3>
-            <p>Send me posts on Telegram with:<br>
-            - What to post<br>
-            - Which platform (X, Instagram, Reddit, LinkedIn)<br>
-            - Which account<br>
-            - Images if needed</p>
+        <div class="queue-section">
+            <div class="section-title">📋 POST QUEUE</div>
+            <div id="queue-list">
+                <div class="empty">
+                    <div class="empty-icon">📭</div>
+                    No posts in queue!<br>
+                    Send me something to post ✨
+                </div>
+            </div>
         </div>
         
-        <div class="note">
-            I check the queue every few minutes<br>
-            or just message me directly!
+        <div class="log-section">
+            <div class="section-title">📜 ACTIVITY LOG</div>
+            <div id="activity-log">
+                <div class="log-item">
+                    <span class="log-time">--:--</span>
+                    <span class="log-message info">Loading activity log...</span>
+                </div>
+            </div>
         </div>
+        
+        <button class="refresh-btn" onclick="loadData()">
+            🔄 REFRESH
+        </button>
+        
+        <footer>
+            Last updated: <span id="last-update">--</span>
+        </footer>
     </div>
     
     <script>
         const GIST_API = 'https://api.github.com/gists/ad437d0ac4f6ea8aa953c6cbdf1c66a7';
         
-        async function loadQueue() {
+        const platformIcons = { x: '𝕏', instagram: '📸', reddit: '🤖', linkedin: '💼' };
+        const accountNames = {
+            acct1: '@Kunalsharmadec6',
+            acct2: '@richbutruined',
+            linkedin1: 'fatmahifza1',
+            linkedin2: 'thepixzastudio'
+        };
+        
+        let activityLog = [];
+        
+        async function loadData() {
             try {
+                // Load queue
                 const res = await fetch(GIST_API);
                 const data = await res.json();
                 const queue = JSON.parse(data.files['queue.json'].content);
-                renderQueue(queue);
+                
+                updateQueue(queue);
+                updateNextAlarm(queue);
+                
+                document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
+                
+                addLog('Dashboard refreshed', 'info');
+                
             } catch (e) {
-                document.getElementById('queue-list').innerHTML = '<div class="empty">Error loading queue</div>';
-                console.error(e);
+                document.getElementById('bot-status').textContent = 'ERROR';
+                document.getElementById('bot-status').className = 'card-value error';
+                addLog('Failed to load queue: ' + e.message, 'error');
             }
         }
         
-        function renderQueue(data) {
-            const posts = data.posts || [];
+        function updateQueue(queue) {
+            const posts = queue.posts || [];
+            const pending = posts.filter(p => p.status !== 'posted');
+            
+            document.getElementById('queue-count').textContent = pending.length + ' posts';
+            
             const list = document.getElementById('queue-list');
             
-            if (posts.length === 0) {
-                list.innerHTML = '<div class="empty">No posts in queue 🎉<br><br>Send me a post on Telegram!</div>';
+            if (pending.length === 0) {
+                list.innerHTML = `
+                    <div class="empty">
+                        <div class="empty-icon">📭</div>
+                        No posts in queue!<br>
+                        Send me something to post ✨
+                    </div>
+                `;
                 return;
             }
             
-            const platformIcons = { x: '𝕏', instagram: '📸', reddit: '🤖', linkedin: '💼' };
-            const accountNames = {
-                acct1: '@Kunalsharmadec6',
-                acct2: '@richbutruined',
-                linkedin1: 'fatmahifza1',
-                linkedin2: 'thepixzastudio'
-            };
-            
-            list.innerHTML = posts.map(post => {
+            list.innerHTML = pending.map(post => {
                 const time = post.scheduledAt 
                     ? new Date(post.scheduledAt).toLocaleString()
                     : new Date(post.createdAt).toLocaleString();
                 
-                const images = (post.images || []).map(img => 
-                    `<img src="${img}" alt="Image" onerror="this.style.display='none'">`
-                ).join('');
-                
                 return `
                     <div class="queue-item">
-                        <div class="qi-header">
-                            <span class="qi-platform">${platformIcons[post.platform] || post.platform} ${post.platform}</span>
+                        <div class="qi-info">
+                            <span class="qi-platform">${platformIcons[post.platform] || post.platform}</span>
                             <span class="qi-account">${accountNames[post.account] || post.account}</span>
+                            <div class="qi-content">${post.text || '[Image only]'}</div>
+                            <div class="qi-time">📅 ${time}</div>
                         </div>
-                        <div class="qi-time">📅 ${time}</div>
-                        <div class="qi-content">${post.text || '[Image only]'}</div>
-                        ${images ? `<div class="qi-images">${images}</div>` : ''}
-                        <div class="qi-status ${post.status}">${post.status}</div>
+                        <span class="qi-status ${post.status}">${post.status.toUpperCase()}</span>
                     </div>
                 `;
             }).join('');
         }
         
+        function updateNextAlarm(queue) {
+            const scheduled = queue.posts 
+                ? queue.posts.filter(p => p.status === 'scheduled')
+                : [];
+            
+            if (scheduled.length === 0) {
+                document.getElementById('next-alarm').textContent = 'No alarms';
+                document.getElementById('next-alarm').className = 'card-value waiting';
+                return;
+            }
+            
+            const next = scheduled
+                .map(p => new Date(p.scheduledAt))
+                .sort((a, b) => a - b)[0];
+            
+            const now = new Date();
+            const diff = next - now;
+            
+            if (diff < 0) {
+                document.getElementById('next-alarm').textContent = 'DUE NOW!';
+                document.getElementById('next-alarm').className = 'card-value error';
+            } else {
+                const hours = Math.floor(diff / 3600000);
+                const mins = Math.floor((diff % 3600000) / 60000);
+                document.getElementById('next-alarm').textContent = 
+                    hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+                document.getElementById('next-alarm').className = 'card-value ok';
+            }
+        }
+        
+        function addLog(message, type = 'info') {
+            const time = new Date().toLocaleTimeString();
+            activityLog.unshift({ time, message, type });
+            if (activityLog.length > 10) activityLog.pop();
+            
+            document.getElementById('activity-log').innerHTML = activityLog.map(log => `
+                <div class="log-item">
+                    <span class="log-time">${log.time}</span>
+                    <span class="log-message ${log.type}">${log.message}</span>
+                </div>
+            `).join('');
+        }
+        
         // Load on start
-        loadQueue();
+        loadData();
         
         // Refresh every 30 seconds
-        setInterval(loadQueue, 30000);
+        setInterval(loadData, 30000);
     </script>
 </body>
 </html>
