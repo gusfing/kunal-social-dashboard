@@ -1,86 +1,616 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>3D Office</title>
-<meta charset="UTF-8">
-<style>body{margin:0;overflow:hidden;background:#000}canvas{display:block}</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kunal's Social Dashboard</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f0f0f; color: #fff; min-height: 100vh; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+        /* Header */
+        header { text-align: center; padding: 30px 0; border-bottom: 1px solid #333; margin-bottom: 30px; }
+        header h1 { font-size: 2rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        header p { color: #888; margin-top: 10px; }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; }
+        .tab { padding: 12px 24px; background: #1a1a1a; border: 1px solid #333; border-radius: 8px; cursor: pointer; transition: all 0.3s; }
+        .tab:hover { background: #252525; }
+        .tab.active { background: #667eea; border-color: #667eea; }
+        .tab .badge { display: inline-block; background: #333; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; margin-left: 8px; }
+        .tab.active .badge { background: rgba(255,255,255,0.2); }
+
+        /* Status Cards */
+        .status-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        .status-card { background: #1a1a1a; border: 1px solid #333; border-radius: 12px; padding: 20px; }
+        .status-card h3 { font-size: 0.875rem; color: #888; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .status-card h3 .icon { font-size: 1.2rem; }
+        .status-card .value { font-size: 1.5rem; font-weight: 600; }
+        .status-card .sub { font-size: 0.75rem; color: #666; margin-top: 4px; }
+        .status-card .connected { color: #4ade80; }
+        .status-card .disconnected { color: #f87171; }
+
+        /* Platform Sections */
+        .platform-section { display: none; }
+        .platform-section.active { display: block; }
+
+        /* Composer */
+        .composer { background: #1a1a1a; border: 1px solid #333; border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+        .composer h2 { margin-bottom: 16px; font-size: 1.1rem; }
+
+        .account-selector { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+        .account-chip { padding: 8px 16px; background: #252525; border: 1px solid #333; border-radius: 20px; cursor: pointer; font-size: 0.875rem; transition: all 0.2s; }
+        .account-chip:hover { background: #333; }
+        .account-chip.selected { background: #667eea; border-color: #667eea; }
+
+        .textarea-wrap { position: relative; margin-bottom: 16px; }
+        textarea { width: 100%; min-height: 120px; background: #252525; border: 1px solid #333; border-radius: 8px; padding: 16px; color: #fff; font-size: 1rem; resize: vertical; font-family: inherit; }
+        textarea:focus { outline: none; border-color: #667eea; }
+        .char-count { position: absolute; bottom: 12px; right: 12px; font-size: 0.75rem; color: #666; }
+        .char-count.warning { color: #fbbf24; }
+        .char-count.error { color: #f87171; }
+
+        .image-upload { margin-bottom: 16px; }
+        .image-upload label { display: block; padding: 20px; background: #252525; border: 2px dashed #444; border-radius: 8px; text-align: center; cursor: pointer; transition: all 0.2s; }
+        .image-upload label:hover { border-color: #667eea; }
+        .image-upload input { display: none; }
+        .image-preview { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+        .preview-item { position: relative; width: 100px; height: 100px; border-radius: 8px; overflow: hidden; }
+        .preview-item img { width: 100%; height: 100%; object-fit: cover; }
+        .preview-item .remove { position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; background: rgba(0,0,0,0.7); border: none; border-radius: 50%; color: #fff; cursor: pointer; font-size: 12px; }
+
+        .schedule-options { display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+        .schedule-options label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+        .schedule-options input[type="datetime-local"] { background: #252525; border: 1px solid #333; border-radius: 6px; padding: 8px 12px; color: #fff; }
+
+        .post-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 8px; color: #fff; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+        .post-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4); }
+        .post-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        /* Queue */
+        .queue-section { background: #1a1a1a; border: 1px solid #333; border-radius: 12px; padding: 24px; }
+        .queue-section h2 { margin-bottom: 16px; font-size: 1.1rem; display: flex; justify-content: space-between; align-items: center; }
+        .queue-section h2 span { font-size: 0.875rem; color: #666; }
+
+        .queue-item { background: #252525; border: 1px solid #333; border-radius: 8px; padding: 16px; margin-bottom: 12px; }
+        .queue-item:last-child { margin-bottom: 0; }
+        .queue-item .qi-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .queue-item .qi-platform { font-size: 0.75rem; padding: 4px 8px; background: #333; border-radius: 4px; }
+        .queue-item .qi-time { font-size: 0.75rem; color: #888; }
+        .queue-item .qi-content { font-size: 0.9rem; color: #ccc; margin-bottom: 8px; line-height: 1.5; }
+        .queue-item .qi-images { display: flex; gap: 8px; margin-bottom: 8px; }
+        .queue-item .qi-images img { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; }
+        .queue-item .qi-actions { display: flex; gap: 8px; }
+        .queue-item .qi-actions button { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.75rem; }
+        .queue-item .qi-actions .post-now { background: #4ade80; color: #000; }
+        .queue-item .qi-actions .delete { background: #f87171; color: #fff; }
+        .queue-item .qi-status { font-size: 0.75rem; margin-top: 8px; padding: 4px 8px; border-radius: 4px; display: inline-block; }
+        .queue-item .qi-status.pending { background: #fbbf24; color: #000; }
+        .queue-item .qi-status.posted { background: #4ade80; color: #000; }
+        .queue-item .qi-status.failed { background: #f87171; color: #fff; }
+
+        /* Empty State */
+        .empty-queue { text-align: center; padding: 40px; color: #666; }
+        .empty-queue .icon { font-size: 3rem; margin-bottom: 12px; }
+
+        /* Notification */
+        .notification { position: fixed; bottom: 20px; right: 20px; padding: 16px 24px; background: #1a1a1a; border: 1px solid #667eea; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); transform: translateY(100px); opacity: 0; transition: all 0.3s; z-index: 1000; }
+        .notification.show { transform: translateY(0); opacity: 1; }
+        .notification.success { border-color: #4ade80; }
+        .notification.error { border-color: #f87171; }
+
+        /* Alarm */
+        .alarm-section { background: #1a1a1a; border: 1px solid #333; border-radius: 12px; padding: 20px; margin-bottom: 24px; }
+        .alarm-section h2 { font-size: 1rem; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .alarm-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+        .alarm-input { background: #252525; border: 1px solid #333; border-radius: 6px; padding: 10px 14px; color: #fff; font-size: 1rem; }
+        .alarm-input:focus { outline: none; border-color: #667eea; }
+        .alarm-btn { padding: 10px 20px; background: #667eea; border: none; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .alarm-btn:hover { background: #7a8ff0; }
+        .alarm-btn.clear { background: #f87171; }
+        .alarm-btn.clear:hover { background: #f98; }
+        .alarm-display { margin-top: 12px; padding: 12px 16px; background: #252525; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .alarm-display .next { color: #4ade80; font-weight: 600; }
+        .alarm-display .countdown { color: #fbbf24; font-size: 0.9rem; }
+        .alarm-display.inactive { color: #666; }
+        .alarm-rings { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; flex-direction: column; z-index: 2000; }
+        .alarm-rings.show { display: flex; }
+        .alarm-rings h2 { font-size: 2.5rem; color: #4ade80; margin-bottom: 20px; animation: pulse 1s infinite; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+        .alarm-rings button { padding: 14px 32px; background: #667eea; border: none; border-radius: 8px; color: #fff; font-size: 1.1rem; cursor: pointer; }
+    </style>
 </head>
 <body>
-<canvas id="c"></canvas>
-<canvas id="m"></canvas>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script>
-var scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,.1,1e3),renderer=new THREE.WebGLRenderer({antialias:true,canvas:document.getElementById('c')});
-renderer.setSize(innerWidth,innerHeight);
-camera.position.set(0,2,5);
-scene.background=new THREE.Color(16776960);
-scene.add(new THREE.AmbientLight(4210750,.6));
-var sun=new THREE.DirectionalLight(16777215,.8);sun.position.set(50,100,50);scene.add(sun);
-var floor=new THREE.Mesh(new THREE.PlaneGeometry(200,200),new THREE.MeshLambertMaterial({color:8421504}));floor.rotation.x=-Math.PI/2;scene.add(floor);
-var player={x:0,y:2,z:0,vy:0,speed:.2,jump:true},keys={},locked=false;
-addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='Enter')document.getElementById('ci').focus()});
-addEventListener('keyup',e=>{keys[e.code]=false});
-addEventListener('click',()=>{if(document.activeElement.tagName!=='INPUT')renderer.domElement.requestPointerLock()});
-addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===renderer.domElement});
-addEventListener('mousemove',e=>{if(locked){camera.rotation.y-=e.movementX*.003;camera.rotation.x-=e.movementY*.003}});
-function box(x,y,z,w,h,d,c){var m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshLambertMaterial({color:c}));m.position.set(x,y,z);scene.add(m);return m}
-box(0,3,-15,30,6,.3,11184690);box(-15,3,0,.3,6,30,11184690);box(15,3,0,.3,6,30,11184690);box(0,6.15,0,30,.3,30,6626211);
-box(0,.6,0,2,.8,1,9320663);box(0,1.1,0,.6,.4,.05,0);
-box(-1.5,.35,3,.5,.5,.5,3355443);box(0,.35,3,.5,.5,.5,3355443);box(1.5,.35,3,.5,.5,.5,3355443);
-for(var i=0;i<4;i++){box(-12+i*3,.4,-12,.6,.5,.6,9320663);box(-12+i*3,1,-12,.8,.8,.8,2194816)}
-box(30,2.5,-25,15,5,.3,11184690);box(22.5,2.5,-17.5,.3,5,15,11184690);box(37.5,2.5,-17.5,.3,5,15,11184690);box(30,5.15,-17.5,15,.3,15,6626211);box(30,.6,-20,6,.8,2,1948544);
-box(-30,2.5,-25,15,5,.3,11184690);box(-22.5,2.5,-17.5,.3,5,15,11184690);box(-37.5,2.5,-17.5,.3,5,15,11184690);box(-30,.6,-20,4,.8,1.5,4776700);box(-30,2,-17,3,1.5,.1,0);
-box(0,2,-40,10,4,.3,11184690);box(-5,2,-34.5,.3,4,10,11184690);box(5,2,-34.5,.3,4,10,11184690);box(0,4.15,-34.5,10,.3,10,6626211);
-for(var i=-2;i<=2;i++)box(i*2.5,1.5,-40,1,3,1,3355443);
-var npcs=[];
-function npc(x,z,c){var g=new THREE.Group();g.add(new THREE.Mesh(new THREE.BoxGeometry(.5,1,.3),new THREE.MeshLambertMaterial({color:c})));g.add(new THREE.Mesh(new THREE.SphereGeometry(.25),new THREE.MeshLambertMaterial({color:16769376})));g.position.set(x,0,z);g.userData={tx:x,tz:z};scene.add(g);npcs.push(g)}
-npc(5,5,7745350);npc(-5,5,2411478);npc(0,8,14204713);
-var sky=new THREE.Mesh(new THREE.SphereGeometry(300,32,32),new THREE.MeshBasicMaterial({color:11184690,side:2}));scene.add(sky);
-var mc=document.getElementById('m').getContext('2d');
-function miniMap(){mc.fillStyle='#1a1a2e';mc.fillRect(0,0,150,100);mc.fillStyle='#333';mc.fillRect(60,30,30,40);mc.fillStyle='#4ade80';mc.beginPath();mc.arc(75+player.x*.5,50+player.z*.5,4,0,6.28);mc.fill()}
-function chat(t,s){var d=document.createElement('div');d.className='m '+s;d.textContent=(s==='s'?'You: ':'')+t;document.getElementById('ml').appendChild(d)}
-document.getElementById('cb').onclick=function(){var i=document.getElementById('ci'),v=i.value.trim();if(v)chat(v,'s'),i.value=''};
-addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.tagName!=='INPUT')document.getElementById('cb').click()});
-function tp(n,v){player.x=n.x;player.z=n.z+5;document.querySelectorAll('.r').forEach(b=>b.classList.remove('a'));v.classList.add('a');document.getElementById('h').textContent='🏢 '+v.textContent.replace(/[^\w\s]/g,'').trim();chat('Joined '+v.textContent.replace(/[^\w\s]/g,'').trim(),'c')}
-var rooms={m:{x:0,z:0},e:{x:30,z:-20},l:{x:-30,z:-20},s:{x:0,z:-35}};
-document.querySelectorAll('.r').forEach(b=>{b.onclick=function(){tp(rooms[b.dataset.r],this)}});
-function loop(){requestAnimationFrame(loop);if(locked){var d=new THREE.Vector3();if(keys.KeyW)d.z-=1;if(keys.KeyS)d.z+=1;if(keys.KeyA)d.x-=1;if(keys.KeyD)d.x+=1;d.normalize().applyAxisAngle(new THREE.Vector3(0,1,0),camera.rotation.y);player.x+=d.x*player.speed;player.z+=d.z*player.speed;player.x=Math.max(-50,Math.min(50,player.x));player.z=Math.max(-50,Math.min(50,player.z));if(keys.Space&&player.jump)player.vy=.3,player.jump=false}player.vy-=.015;player.y+=player.vy;if(player.y<=2)player.y=2,player.vy=0,player.jump=true;camera.position.set(player.x,player.y,player.z);npcs.forEach((n,i)=>{n.userData.tx+=Math.sin(Date.now()*.002+i)*.02;n.userData.tz+=Math.cos(Date.now()*.002+i)*.02;n.position.x+=(n.userData.tx-n.position.x)*.02;n.position.z+=(n.userData.tz-n.position.z)*.02;n.rotation.y=Math.atan2(n.userData.tx-n.position.x,n.userData.tz-n.position.z)});miniMap();renderer.render(scene,camera)}loop();onresize=function(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)}
-</script>
-<style>
-body{margin:0;font-family:Segoe UI,sans-serif;overflow:hidden}
-#h{position:fixed;top:20px;left:20px;background:rgba(0,0,0,.7);color:#fff;padding:10px 20px;border-radius:8px;font-size:1.2rem;z-index:100}
-.r{position:fixed;top:80px;left:20px;z-index:100}
-.r button{display:block;width:150px;padding:10px;margin:5px 0;background:rgba(0,0,0,.7);border:1px solid #333;color:#fff;border-radius:6px;cursor:pointer}
-.r button:hover,.r button.a{background:#4ade80;color:#000}
-.c{position:fixed;bottom:20px;left:20px;background:rgba(0,0,0,.8);color:#fff;padding:15px;border-radius:8px;z-index:100;font-size:.9rem}
-.c h3{color:#4ade80;margin-bottom:10px}
-.c kbd{background:#333;padding:2px 8px;border-radius:4px;margin:0 3px}
-#m{position:fixed;top:20px;right:20px;width:150px;height:100px;background:rgba(0,0,0,.8);border:2px solid #4ade80;border-radius:8px;z-index:100}
-#ch{position:fixed;bottom:20px;right:20px;width:280px;background:rgba(0,0,0,.9);border-radius:12px;z-index:100}
-#ch .h{padding:12px;background:#1a1a2e;border-radius:12px 12px 0 0;color:#fff;font-weight:bold}
-#ml{padding:12px;max-height:200px;overflow-y:auto}
-.m{padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:.85rem}
-.m.s{background:#4ade80;color:#000;margin-left:20px}
-.m.o{background:#333;color:#fff;margin-right:20px}
-.m.c{background:#fbbf24;color:#000;text-align:center;font-size:.75rem}
-#ci{padding:12px;border-top:1px solid #333;display:flex;gap:8px}
-#ci input{flex:1;padding:8px;border:none;border-radius:6px;background:#333;color:#fff}
-#ci button{padding:8px 16px;background:#4ade80;border:none;border-radius:6px;color:#000;font-weight:bold;cursor:pointer}
-</style>
-<div id="h" class="h">🏢 Main Hall</div>
-<div class="r">
-<button class="a" data-r="m">🏢 Main Hall</button>
-<button data-r="e">📋 Meeting Room</button>
-<button data-r="l">🛋️ Lounge</button>
-<button data-r="s">🖥️ Server Room</button>
-</div>
-<div class="c">
-<h3>🎮 Controls</h3>
-<p><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move</p>
-<p><kbd>Mouse</kbd> Look</p>
-<p><kbd>Space</kbd> Jump</p>
-<p><kbd>Enter</kbd> Chat</p>
-</div>
-<div id="ch"><div class="h">💬 Team Chat</div><div id="ml"><div class="m c">Welcome to 3D Office!</div></div><div id="ci"><input id="ci" placeholder="Type..."><button id="cb">Send</button></div></div>
+    <div class="container">
+        <header>
+            <h1>Kunal's Social Dashboard</h1>
+            <p>Manage your X, Instagram & Pinterest posts in one place</p>
+        </header>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="status-card">
+                <h3><span class="icon">X</span> X.com</h3>
+                <div class="value connected" id="x-status">@richbutruined</div>
+                <div class="sub">Connected as Kunal's Account</div>
+            </div>
+            <div class="status-card">
+                <h3><span class="icon">📸</span> Instagram</h3>
+                <div class="value connected" id="ig-status">@paper_draft_animation</div>
+                <div class="sub">Connected</div>
+            </div>
+            <div class="status-card">
+                <h3><span class="icon">📌</span> Pinterest</h3>
+                <div class="value connected" id="pinterest-status">@thepixzastudio</div>
+                <div class="sub">Connected</div>
+            </div>
+            <div class="status-card">
+                <h3><span class="icon">📋</span> Queue</h3>
+                <div class="value" id="queue-count">0</div>
+                <div class="sub">Posts waiting</div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <div class="tab active" data-platform="x">X X.com <span class="badge">@richbutruined</span></div>
+            <div class="tab" data-platform="instagram">📸 Instagram <span class="badge">@paper_draft_animation</span></div>
+            <div class="tab" data-platform="pinterest">📌 Pinterest</div>
+        </div>
+
+        <!-- Alarm Section -->
+        <div class="alarm-section">
+            <h2>⏰ ALARM</h2>
+            <div class="alarm-row">
+                <input type="datetime-local" class="alarm-input" id="alarm-input">
+                <button class="alarm-btn" onclick="setAlarm()">Set Alarm</button>
+                <button class="alarm-btn clear" onclick="clearAlarm()">Clear</button>
+            </div>
+            <div class="alarm-display" id="alarm-display">
+                <span class="inactive">No alarm set</span>
+            </div>
+        </div>
+
+        <!-- X Composer -->
+        <div class="platform-section active" id="x-section">
+            <div class="composer">
+                <h2>Compose X Post</h2>
+
+                <div class="account-selector">
+                    <div class="account-chip selected" data-account="richbutruined">@richbutruined</div>
+                    <div class="account-chip" data-account="Kunalsharmadec6">@Kunalsharmadec6</div>
+                </div>
+
+                <div class="textarea-wrap">
+                    <textarea id="x-text" placeholder="What's happening?" maxlength="280"></textarea>
+                    <div class="char-count"><span id="x-char-count">0</span>/280</div>
+                </div>
+
+                <div class="image-upload">
+                    <label>
+                        <span>📷 Add Images (up to 4)</span>
+                        <input type="file" id="x-images" accept="image/*" multiple>
+                    </label>
+                    <div class="image-preview" id="x-preview"></div>
+                </div>
+
+                <button class="post-btn" onclick="addToQueue('x')">Add to Queue</button>
+            </div>
+        </div>
+
+        <!-- Instagram Composer -->
+        <div class="platform-section" id="instagram-section">
+            <div class="composer">
+                <h2>Compose Instagram Post</h2>
+
+                <div class="textarea-wrap">
+                    <textarea id="ig-text" placeholder="Write a caption..."></textarea>
+                </div>
+
+                <div class="image-upload">
+                    <label>
+                        <span>📷 Add Image or Video</span>
+                        <input type="file" id="ig-images" accept="image/*,video/*" multiple>
+                    </label>
+                    <div class="image-preview" id="ig-preview"></div>
+                </div>
+
+                <button class="post-btn" onclick="addToQueue('instagram')">Add to Queue</button>
+            </div>
+        </div>
+
+        <!-- Pinterest Composer -->
+        <div class="platform-section" id="pinterest-section">
+            <div class="composer">
+                <h2>Compose Pinterest Pin</h2>
+
+                <div class="textarea-wrap">
+                    <textarea id="pinterest-text" placeholder="Pin title and description..."></textarea>
+                </div>
+
+                <div class="image-upload">
+                    <label>
+                        <span>📷 Add Pin Image</span>
+                        <input type="file" id="pinterest-images" accept="image/*">
+                    </label>
+                    <div class="image-preview" id="pinterest-preview"></div>
+                </div>
+
+                <button class="post-btn" onclick="addToQueue('pinterest')">Add to Queue</button>
+            </div>
+        </div>
+
+        <!-- Queue -->
+        <div class="queue-section">
+            <h2>Post Queue <span id="queue-info">0 posts</span></h2>
+            <div id="queue-list">
+                <div class="empty-queue">
+                    <div class="icon">📭</div>
+                    <p>No posts in queue</p>
+                    <p style="font-size: 0.8rem; margin-top: 8px;">Compose a post above and click "Add to Queue"</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div class="notification" id="notification"></div>
+
+    <!-- Alarm Overlay -->
+    <div class="alarm-rings" id="alarm-overlay">
+        <h2>⏰ ALARM!</h2>
+        <p style="color: #fff; margin-bottom: 20px;">Time's up!</p>
+        <button onclick="dismissAlarm()">Dismiss</button>
+    </div>
+
+    <script>
+        // State
+        let queue = [];
+        let currentPlatform = 'x';
+        let selectedAccount = 'richbutruined';
+
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.platform-section').forEach(s => s.classList.remove('active'));
+
+                tab.classList.add('active');
+                document.getElementById(`${tab.dataset.platform}-section`).classList.add('active');
+                currentPlatform = tab.dataset.platform;
+            });
+        });
+
+        // Account selection
+        document.querySelectorAll('.account-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                document.querySelectorAll('.account-chip').forEach(c => c.classList.remove('selected'));
+                chip.classList.add('selected');
+                selectedAccount = chip.dataset.account;
+            });
+        });
+
+        // Character count
+        document.querySelectorAll('textarea').forEach(ta => {
+            ta.addEventListener('input', () => {
+                const count = ta.value.length;
+                const counter = document.getElementById(`${ta.id.replace('-text', '')}-char-count`);
+                if (counter) {
+                    counter.textContent = count;
+                    const charCount = document.querySelector(`#${ta.id.replace('-text', '')} .char-count`);
+                    charCount.classList.remove('warning', 'error');
+                    if (count > 260) charCount.classList.add('warning');
+                    if (count > 280) charCount.classList.add('error');
+                }
+            });
+        });
+
+        // Image preview
+        const imageInputs = ['x-images', 'ig-images', 'pinterest-images'];
+        imageInputs.forEach(inputId => {
+            document.getElementById(inputId).addEventListener('change', (e) => {
+                const preview = document.getElementById(inputId.replace('-images', '-preview'));
+                preview.innerHTML = '';
+
+                const platform = inputId.split('-')[0];
+                const maxImages = platform === 'x' ? 4 : 1;
+
+                Array.from(e.target.files).slice(0, maxImages).forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const div = document.createElement('div');
+                        div.className = 'preview-item';
+                        div.innerHTML = `
+                            <img src="${e.target.result}" alt="Preview">
+                            <button class="remove" onclick="this.parentElement.remove()">×</button>
+                        `;
+                        preview.appendChild(div);
+                    };
+                    reader.readAsDataURL(file);
+                });
+            });
+        });
+
+        // Add to queue
+        function addToQueue(platform) {
+            const textEl = document.getElementById(`${platform}-text`);
+            const imagesEl = document.getElementById(`${platform}-images`);
+            const previewEl = document.getElementById(`${platform}-preview`);
+
+            const text = textEl.value.trim();
+            if (!text && previewEl.children.length === 0) {
+                showNotification('Please add some text or an image', 'error');
+                return;
+            }
+
+            // Collect images
+            const images = [];
+            previewEl.querySelectorAll('img').forEach(img => {
+                images.push(img.src);
+            });
+
+            const post = {
+                id: Date.now(),
+                platform,
+                account: platform === 'x' ? selectedAccount : null,
+                text,
+                images,
+                status: 'pending',
+                createdAt: new Date().toISOString()
+            };
+
+            queue.push(post);
+            saveQueue();
+            renderQueue();
+
+            // Clear form
+            textEl.value = '';
+            previewEl.innerHTML = '';
+            const charCount = document.getElementById(`${platform}-char-count`);
+            if (charCount) charCount.textContent = '0';
+
+            showNotification('Post added to queue!', 'success');
+        }
+
+        // Render queue
+        function renderQueue() {
+            const list = document.getElementById('queue-list');
+            const count = document.getElementById('queue-count');
+            const info = document.getElementById('queue-info');
+
+            count.textContent = queue.length;
+            info.textContent = `${queue.length} posts`;
+
+            if (queue.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-queue">
+                        <div class="icon">📭</div>
+                        <p>No posts in queue</p>
+                        <p style="font-size: 0.8rem; margin-top: 8px;">Compose a post above and click "Add to Queue"</p>
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = queue.map(post => {
+                const platformIcons = { x: 'X', instagram: '📸', pinterest: '📌' };
+                const accountLabel = post.account ? `@${post.account}` : '';
+                const imagesHtml = post.images.map(img => `<img src="${img}" alt="Image">`).join('');
+
+                return `
+                    <div class="queue-item" data-id="${post.id}">
+                        <div class="qi-header">
+                            <span class="qi-platform">${platformIcons[post.platform]} ${post.platform}${accountLabel ? ' - ' + accountLabel : ''}</span>
+                            <span class="qi-time">${new Date(post.createdAt).toLocaleString()}</span>
+                        </div>
+                        <div class="qi-content">${escapeHtml(post.text) || (post.images.length ? '[Image only]' : '')}</div>
+                        ${post.images.length ? `<div class="qi-images">${imagesHtml}</div>` : ''}
+                        <div class="qi-status ${post.status}">${post.status}</div>
+                        <div class="qi-actions">
+                            <button class="post-now" onclick="postNow(${post.id})">Post Now</button>
+                            <button class="delete" onclick="deleteFromQueue(${post.id})">Delete</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Queue actions
+        function postNow(id) {
+            const post = queue.find(p => p.id === id);
+            if (post) {
+                post.status = 'posting';
+                saveQueue();
+                renderQueue();
+
+                // Notify agent (via file)
+                notifyAgent(post);
+                showNotification('Post sent to agent for publishing!', 'success');
+            }
+        }
+
+        function deleteFromQueue(id) {
+            queue = queue.filter(p => p.id !== id);
+            saveQueue();
+            renderQueue();
+            showNotification('Post deleted from queue', 'success');
+        }
+
+        // Notify agent
+        function notifyAgent(post) {
+            // Write to a file that the agent will check
+            const pending = JSON.parse(localStorage.getItem('pendingPosts') || '[]');
+            pending.push({...post, notifiedAt: new Date().toISOString()});
+            localStorage.setItem('pendingPosts', JSON.stringify(pending));
+
+            // Also write to a server-side file via fetch
+            fetch('/api/notify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(post)
+            }).catch(() => {});
+        }
+
+        // Save/Load queue
+        function saveQueue() {
+            localStorage.setItem('postQueue', JSON.stringify(queue));
+        }
+
+        function loadQueue() {
+            queue = JSON.parse(localStorage.getItem('postQueue') || '[]');
+            renderQueue();
+        }
+
+        // Notifications
+        function showNotification(message, type = 'info') {
+            const notif = document.getElementById('notification');
+            notif.textContent = message;
+            notif.className = `notification ${type} show`;
+
+            setTimeout(() => {
+                notif.classList.remove('show');
+            }, 3000);
+        }
+
+        // Load on start
+        loadQueue();
+        loadAlarm();
+
+        // Poll for agent responses
+        setInterval(() => {
+            fetch('/api/queue/status')
+                .then(r => r.json())
+                .then(data => {
+                    let changed = false;
+                    data.updates.forEach(update => {
+                        const post = queue.find(p => p.id === update.id);
+                        if (post && post.status !== update.status) {
+                            post.status = update.status;
+                            changed = true;
+                        }
+                    });
+                    if (changed) {
+                        saveQueue();
+                        renderQueue();
+                    }
+                })
+                .catch(() => {});
+        }, 5000);
+
+        // Alarm
+        let alarmTime = null;
+        let alarmInterval = null;
+
+        function loadAlarm() {
+            const saved = localStorage.getItem('alarmTime');
+            if (saved) {
+                alarmTime = new Date(saved);
+                if (alarmTime > new Date()) {
+                    startAlarmCountdown();
+                } else {
+                    alarmTime = null;
+                    localStorage.removeItem('alarmTime');
+                }
+            }
+        }
+
+        function setAlarm() {
+            const input = document.getElementById('alarm-input');
+            if (!input.value) {
+                showNotification('Please select a time', 'error');
+                return;
+            }
+
+            alarmTime = new Date(input.value);
+
+            // Set min datetime to now
+            const now = new Date();
+            now.setMinutes(now.getMinutes() + 1);
+            input.min = now.toISOString().slice(0, 16);
+
+            if (alarmTime <= new Date()) {
+                showNotification('Alarm must be in the future', 'error');
+                return;
+            }
+
+            localStorage.setItem('alarmTime', alarmTime.toISOString());
+            startAlarmCountdown();
+            showNotification('Alarm set!', 'success');
+        }
+
+        function startAlarmCountdown() {
+            if (alarmInterval) clearInterval(alarmInterval);
+
+            updateAlarmDisplay();
+
+            alarmInterval = setInterval(() => {
+                const now = new Date();
+                const diff = alarmTime - now;
+
+                if (diff <= 0) {
+                    triggerAlarm();
+                    clearInterval(alarmInterval);
+                } else {
+                    updateAlarmDisplay();
+                }
+            }, 1000);
+        }
+
+        function updateAlarmDisplay() {
+            const display = document.getElementById('alarm-display');
+            if (!alarmTime) {
+                display.innerHTML = '<span class="inactive">No alarm set</span>';
+                display.classList.remove('active');
+                return;
+            }
+
+            const diff = alarmTime - new Date();
+            const h = Math.floor(diff / 3600000);
+            const m = Math.floor((diff % 3600000) / 60000);
+            const s = Math.floor((diff % 60000) / 1000);
+
+            display.innerHTML = `
+                <span class="next">⏰ Next: ${alarmTime.toLocaleString()}</span>
+                <span class="countdown">${h}h ${m}m ${s}s remaining</span>
+            `;
+            display.classList.add('active');
+        }
+
+        function triggerAlarm() {
+            document.getElementById('alarm-overlay').classList.add('show');
+            showNotification('⏰ ALARM!', 'success');
+
+            // Try notification API
+            if (Notification.permission === 'granted') {
+                new Notification('⏰ Alarm!', { body: 'Your alarm is going off!' });
+            } else if (Notification.permission !== 'denied') {
+                Notification.requestPermission();
+            }
+        }
+
+        function dismissAlarm() {
+            document.getElementById('alarm-overlay').classList.remove('show');
+            alarmTime = null;
+            localStorage.removeItem('alarmTime');
+            updateAlarmDisplay();
+        }
+
+        function clearAlarm() {
+            if (alarmInterval) clearInterval(alarmInterval);
+            alarmTime = null;
+            localStorage.removeItem('alarmTime');
+            document.getElementById('alarm-input').value = '';
+            updateAlarmDisplay();
+            showNotification('Alarm cleared', 'success');
+        }
+    </script>
 </body>
 </html>
